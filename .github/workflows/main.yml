@@ -1,0 +1,82 @@
+name: CI/CD Pipeline (Terraform & Build & Test & Deploy)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REPOSITORY: asterra-devops-repo
+  IMAGE_TAG: ${{ github.sha }}
+  PYTHONPATH: ${{ github.workspace }}/asterra/geojson-loader
+
+jobs:
+  build-and-deploy:
+    name: 🚀 Terraform → Test → Deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: asterra/terraform/
+        run: terraform init
+
+      - name: Terraform Apply (auto-approve)
+        working-directory: asterra/terraform/
+        run: terraform apply -auto-approve -input=false -no-color
+
+      - name: Install system dependencies (GDAL)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install -r asterra/geojson-loader/requirements.txt
+          pip install pytest
+
+      - name: Run Tests
+        run: PYTHONPATH=asterra/geojson_loader pytest asterra/tests
+
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG asterra/geojson-loader
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to Kubernetes
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name asterra-cluster
+          kubectl set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+          kubectl rollout status deployment/geojson-processor
