@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress 
+metadata:
+  name: geojson-ingress
+  annotations: 
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec: 
+  rules:
+    - host: geojson.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix 
+            backend: 
+              service:
+                name: geojson-service
+                port: 
+                  number: 80    

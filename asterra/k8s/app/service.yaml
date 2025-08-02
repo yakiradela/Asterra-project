@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: geojson-service
+spec: 
+  type: LoadBalancer
+  selector: 
+    app: geojson-processor
+  ports:
+    - port: 80
+      targetPort: 5000

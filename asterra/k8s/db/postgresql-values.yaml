@@ -1,0 +1,8 @@
+auth:
+  username: asterrauser
+  password: securepassword
+  database: asterra_db
+primary:
+  persistence:
+    enabled: true 
+    size: 1Gi  

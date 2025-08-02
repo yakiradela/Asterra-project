@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata: 
+  name: geojson-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: geojson-processor
+  template:
+    metadata: 
+      labels:  
+        app: geojson-processor
+    spec: 
+      containers:
+        - name: geojson-processor
+          image: <REPLACE_WITH_ECR_IMAGE>
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: geojson-env
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: geojson-secrets
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /upload
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /upload
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
