@@ -1,5 +1,43 @@
+#####################
+# VPC and Networking
+#####################
+
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+}
+
+resource "aws_subnet" "public_subnet" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.0.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-2a"
+}
+
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+resource "aws_route_table_association" "public_assoc" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_eip" "nat" {
+  domain = "vpc"
+}
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_subnet.id
 }
 
 resource "aws_subnet" "private_subnet_a" {
@@ -13,6 +51,29 @@ resource "aws_subnet" "private_subnet_b" {
   cidr_block        = "10.0.2.0/24"
   availability_zone = "us-east-2b"
 }
+
+resource "aws_route_table" "private_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+}
+
+resource "aws_route_table_association" "private_a" {
+  subnet_id      = aws_subnet.private_subnet_a.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+resource "aws_route_table_association" "private_b" {
+  subnet_id      = aws_subnet.private_subnet_b.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+#########################
+# Security Groups
+#########################
 
 resource "aws_security_group" "rdp_sg" {
   name   = "${var.project_name}-rdp"
@@ -33,12 +94,37 @@ resource "aws_security_group" "rdp_sg" {
   }
 }
 
+resource "aws_security_group" "eks_sg" {
+  name        = "${var.project_name}-eks-sg"
+  description = "Allow HTTPS inbound traffic to EKS"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-eks-sg"
+  }
+}
+
+#########################
+# RDS Cluster
+#########################
+
 resource "aws_db_subnet_group" "private_subnet_group" {
   name       = "private-db-subnet-group"
-  subnet_ids = [
-    aws_subnet.private_subnet_a.id,
-    aws_subnet.private_subnet_b.id
-  ]
+  subnet_ids = [aws_subnet.private_subnet_a.id, aws_subnet.private_subnet_b.id]
 }
 
 resource "aws_rds_cluster" "postgres_cluster" {
@@ -68,39 +154,9 @@ resource "aws_rds_cluster_instance" "postgres_instance" {
   publicly_accessible     = false
 }
 
-resource "aws_s3_bucket" "geojson_bucket" {
-  bucket        = "${var.project_name}-geojson-input"
-  force_destroy = true
-}
-
-resource "aws_ecr_repository" "ecr-repo" {
-  name = "${var.project_name}-repo"
-}
-
-resource "aws_security_group" "eks_sg" {
-  name        = "${var.project_name}-eks-sg"
-  description = "Allow HTTPS inbound traffic to EKS"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTPS traffic"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-eks-sg"
-  }
-}
+#########################
+# EKS Module
+#########################
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
@@ -124,7 +180,7 @@ module "eks" {
 
   addons = {
     coredns = {
-      most_recent                 = true
+      most_recent                  = true
       resolve_conflicts_on_create = "OVERWRITE"
       resolve_conflicts_on_update = "NONE"
     }
@@ -138,10 +194,10 @@ module "eks" {
 
   eks_managed_node_groups = {
     default = {
-      min_size              = 1
-      max_size              = 3
-      desired_size          = var.node_count
-      instance_types        = ["t3.medium"]
+      min_size               = 1
+      max_size               = 3
+      desired_size           = var.node_count
+      instance_types         = ["t3.medium"]
       vpc_security_group_ids = [aws_security_group.eks_sg.id]
     }
   }
