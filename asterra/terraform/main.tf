@@ -115,7 +115,7 @@ module "eks" {
     aws_subnet.private_subnet_b.id,
   ]
 
-  cluster_security_group_id = aws_security_group.eks_sg.id
+  cluster_additional_security_group_ids = [aws_security_group.eks_sg.id]
 
   endpoint_public_access       = true
   endpoint_private_access      = true
