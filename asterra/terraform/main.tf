@@ -79,21 +79,34 @@ resource "aws_ecr_repository" "ecr-repo" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "21.0.0"
+  version = ">= 21.0.0"
 
-  cluster_name    = var.project_name
-  cluster_version = "1.32"
-  vpc_id          = aws_vpc.main.id
-  subnet_ids      = [
+  name               = var.project_name
+  kubernetes_version = "1.32"
+
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = [
     aws_subnet.private_subnet_a.id,
     aws_subnet.private_subnet_b.id,
   ]
 
-  create_kms_key = false
+  endpoint_public_access       = true
+  endpoint_private_access      = true
+  endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
-  cluster_endpoint_public_access       = true
-  cluster_endpoint_private_access      = true
-  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+  addons = {
+    coredns = {
+      most_recent                 = true
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "NONE"
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+  }
 
   eks_managed_node_groups = {
     default = {
