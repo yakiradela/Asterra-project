@@ -115,34 +115,17 @@ module "eks" {
     aws_subnet.private_subnet_b.id,
   ]
 
-  cluster_additional_security_group_ids = [aws_security_group.eks_sg.id]
+  security_group_id = aws_security_group.eks_sg.id
+  # או למקרה של SG נוסף:
+  additional_security_group_ids = [aws_security_group.eks_sg.id]
 
   endpoint_public_access       = true
   endpoint_private_access      = true
   endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
-  addons = {
-    coredns = {
-      most_recent                 = true
-      resolve_conflicts_on_create = "OVERWRITE"
-      resolve_conflicts_on_update = "NONE"
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent = true
-    }
-  }
+  addons = { /* ... */ }
 
-  eks_managed_node_groups = {
-    default = {
-      min_size       = 1
-      max_size       = 3
-      desired_size   = var.node_count
-      instance_types = ["t3.medium"]
-    }
-  }
+  eks_managed_node_groups = { /* ... */ }
 
   tags = {
     Environment = var.environment
