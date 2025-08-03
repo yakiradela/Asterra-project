@@ -79,7 +79,7 @@ resource "aws_ecr_repository" "ecr-repo" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "20.13.1"
+  version = "19.21.0"
 
   cluster_name    = var.project_name
   cluster_version = "1.32"
