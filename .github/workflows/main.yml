@@ -37,6 +37,11 @@ jobs:
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
 
+      - name: Clean Terraform cache
+        working-directory: asterra/terraform/
+        run: |
+          rm -rf .terraform .terraform.lock.hcl
+
       - name: Terraform Init
         working-directory: asterra/terraform/
         run: terraform init
