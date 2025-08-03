@@ -39,3 +39,15 @@ variable "allowed_rdp_ip" {
 variable "iac_storage_bucket" {
   default = "astera-iac-storage"
 }
+
+variable "node_count" {
+  description = "Number of nodes in the node group"
+  type        = number
+  default     = 2
+}
+
+variable "environment" {
+  description = "Deployment environment (e.g., dev, prod)"
+  type        = string
+  default     = "dev"
+}
