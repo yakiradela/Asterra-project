@@ -107,7 +107,7 @@ module "eks" {
   version = ">= 21.0.0"
 
   name               = var.project_name
-  kubernetes_version = "1.32"
+  kubernetes_version = "1.29"
 
   vpc_id     = aws_vpc.main.id
   subnet_ids = [
@@ -115,21 +115,41 @@ module "eks" {
     aws_subnet.private_subnet_b.id,
   ]
 
-  security_group_id = aws_security_group.eks_sg.id
-  # או למקרה של SG נוסף:
-  additional_security_group_ids = [aws_security_group.eks_sg.id]
+  security_group_id              = aws_security_group.eks_sg.id
+  additional_security_group_ids  = [aws_security_group.eks_sg.id]
 
-  endpoint_public_access       = true
-  endpoint_private_access      = true
-  endpoint_public_access_cidrs = ["0.0.0.0/0"]
+  endpoint_public_access         = true
+  endpoint_private_access        = true
+  endpoint_public_access_cidrs   = ["0.0.0.0/0"]
 
-  addons = { /* ... */ }
+  addons = {
+    coredns = {
+      most_recent                 = true
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "NONE"
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+  }
 
-  eks_managed_node_groups = { /* ... */ }
+  eks_managed_node_groups = {
+    default = {
+      min_size              = 1
+      max_size              = 3
+      desired_size          = var.node_count
+      instance_types        = ["t3.medium"]
+      vpc_security_group_ids = [aws_security_group.eks_sg.id]
+    }
+  }
 
   tags = {
     Environment = var.environment
     Project     = var.project_name
   }
 }
+
 
