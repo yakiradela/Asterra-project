@@ -191,6 +191,16 @@ module "eks" {
   endpoint_private_access        = true
   endpoint_public_access_cidrs   = ["0.0.0.0/0"]
 
+  manage_aws_auth_configmap = true
+
+  aws_auth_roles = [
+    {
+      rolearn  = "arn:aws:iam::557690607676:role/astera-devops-cluster-20250803164116409800000001"
+      username = "admin"
+      groups   = ["system:masters"]
+    }
+  ]
+
   addons = {
     coredns = {
       most_recent                  = true
@@ -220,5 +230,4 @@ module "eks" {
     Project     = var.project_name
   }
 }
-
 
