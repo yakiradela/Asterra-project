@@ -76,3 +76,36 @@ resource "aws_s3_bucket" "geojson_bucket" {
 resource "aws_ecr_repository" "ecr-repo" {
   name = "${var.project_name}-repo"
 }
+
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "20.24.2"
+
+  cluster_name    = var.project_name
+  cluster_version = "1.32"
+  vpc_id          = aws_vpc.main.id
+  subnet_ids      = [
+    aws_subnet.private_subnet_a.id,
+    aws_subnet.private_subnet_b.id,
+  ]
+
+  create_kms_key = false
+
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_private_access      = true
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+
+  eks_managed_node_groups = {
+    default = {
+      min_size       = 1
+      max_size       = 3
+      desired_size   = var.node_count
+      instance_types = ["t3.medium"]
+    }
+  }
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
