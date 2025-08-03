@@ -33,6 +33,6 @@ output "eks_cluster_security_group_id" {
 
 output "eks_node_group_role_arn" {
   description = "IAM Role ARN for the default EKS node group"
-  value       = module.eks.node_group_role_arn
+  value       = module.eks.eks_managed_node_groups["default"].iam_role_arn
 }
 
