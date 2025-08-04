@@ -175,14 +175,12 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "${var.project_name}-${var.suffix}"
+  cluster_name    = var.project_name
   cluster_version = "1.29"
 
-  enable_cluster_creator_admin_permissions = true
-
-  cluster_endpoint_public_access         = true
-  cluster_endpoint_private_access        = true
-  cluster_endpoint_public_access_cidrs   = ["0.0.0.0/0"]
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = true
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
   vpc_id     = aws_vpc.main.id
   subnet_ids = [
@@ -190,14 +188,12 @@ module "eks" {
     aws_subnet.private_subnet_b.id,
   ]
 
-  create_kms_key = true
-  kms_key_alias  = "alias/eks/${var.project_name}-${var.suffix}"
-
-  cloudwatch_log_group_name = "/aws/eks/${var.project_name}-${var.suffix}/cluster"
-
-  create_cluster_security_group        = true
+  create_cluster_security_group = true
   cluster_security_group_additional_rules = {}
   node_security_group_additional_rules    = {}
+
+  kms_key_aliases = ["alias/eks/${var.project_name}-${var.suffix}"]
+  create_cloudwatch_log_group = true
 
   eks_managed_node_groups = {
     default = {
