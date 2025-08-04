@@ -173,10 +173,14 @@ resource "aws_ecr_repository" "ecr-repo" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "20.8.5" # בחר גרסה שתואמת למה שקיים בפועל, אם 21.0.0 לא עובדת
+  version = "~> 20.0"
 
-  name               = var.project_name
-  kubernetes_version = "1.29"
+  cluster_name    = var.project_name
+  cluster_version = "1.29"
+
+  cluster_endpoint_public_access = true
+  cluster_endpoint_private_access = true
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
   vpc_id     = aws_vpc.main.id
   subnet_ids = [
@@ -184,28 +188,9 @@ module "eks" {
     aws_subnet.private_subnet_b.id,
   ]
 
-  security_group_id             = aws_security_group.eks_sg.id
-  additional_security_group_ids = [aws_security_group.eks_sg.id]
-
-  endpoint_public_access       = true
-  endpoint_private_access      = true
-  endpoint_public_access_cidrs = ["0.0.0.0/0"]
-
-  # ⚠️ הסרנו manage_aws_auth_configmap ו- aws_auth_roles
-
-  addons = {
-    coredns = {
-      most_recent                  = true
-      resolve_conflicts_on_create = "OVERWRITE"
-      resolve_conflicts_on_update = "NONE"
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent = true
-    }
-  }
+  create_cluster_security_group = true
+  cluster_security_group_additional_rules = {}
+  node_security_group_additional_rules = {}
 
   eks_managed_node_groups = {
     default = {
@@ -217,10 +202,21 @@ module "eks" {
     }
   }
 
+  cluster_addons = {
+    coredns = {
+      most_recent                  = true
+      preserve                     = false
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+  }
+
   tags = {
     Environment = var.environment
     Project     = var.project_name
   }
 }
-
-
