@@ -51,3 +51,8 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "suffix" {
+  description = "A unique suffix to prevent resource name conflicts (e.g. region, env, timestamp)"
+  type        = string
+}
