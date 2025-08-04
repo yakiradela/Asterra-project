@@ -173,7 +173,7 @@ resource "aws_ecr_repository" "ecr-repo" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = ">= 21.0.0"
+  version = "21.0.0" # גרסה עם תמיכה בפרמטרים הדרושים
 
   name               = var.project_name
   kubernetes_version = "1.29"
@@ -184,13 +184,14 @@ module "eks" {
     aws_subnet.private_subnet_b.id,
   ]
 
-  security_group_id              = aws_security_group.eks_sg.id
-  additional_security_group_ids  = [aws_security_group.eks_sg.id]
+  security_group_id             = aws_security_group.eks_sg.id
+  additional_security_group_ids = [aws_security_group.eks_sg.id]
 
-  endpoint_public_access         = true
-  endpoint_private_access        = true
-  endpoint_public_access_cidrs   = ["0.0.0.0/0"]
+  endpoint_public_access       = true
+  endpoint_private_access      = true
+  endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
+  # ניהול הרשאות IAM ב־aws-auth configmap
   manage_aws_auth_configmap = true
 
   aws_auth_roles = [
