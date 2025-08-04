@@ -55,5 +55,5 @@ variable "environment" {
 variable "suffix" {
   description = "A unique suffix to avoid naming collisions"
   type        = string
-  default     = "0001"
+  default     = "0002"
 }
