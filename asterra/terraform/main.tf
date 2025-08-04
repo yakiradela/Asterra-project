@@ -192,7 +192,7 @@ module "eks" {
   cluster_security_group_additional_rules = {}
   node_security_group_additional_rules    = {}
   
-  kms_key_aliases = ["alias/astera"]
+  kms_key_aliases = ["alias/asterra"]
 
   create_cloudwatch_log_group = true
 
