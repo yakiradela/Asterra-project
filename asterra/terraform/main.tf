@@ -192,7 +192,7 @@ module "eks" {
   cluster_security_group_additional_rules = {}
   node_security_group_additional_rules    = {}
 
-  kms_key_aliases = ["alias/eks/${var.project_name}-${var.suffix}"]
+  kms_key_aliases = ["alias/eks/${var.project_name}-${var.suffix}-kms"]
   create_cloudwatch_log_group = true
 
   eks_managed_node_groups = {
