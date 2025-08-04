@@ -173,7 +173,7 @@ resource "aws_ecr_repository" "ecr-repo" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "21.0.0" # גרסה עם תמיכה בפרמטרים הדרושים
+  version = "20.8.5" # בחר גרסה שתואמת למה שקיים בפועל, אם 21.0.0 לא עובדת
 
   name               = var.project_name
   kubernetes_version = "1.29"
@@ -191,16 +191,7 @@ module "eks" {
   endpoint_private_access      = true
   endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
-  # ניהול הרשאות IAM ב־aws-auth configmap
-  manage_aws_auth_configmap = true
-
-  aws_auth_roles = [
-    {
-      rolearn  = "arn:aws:iam::557690607676:role/astera-devops-cluster-20250803164116409800000001"
-      username = "admin"
-      groups   = ["system:masters"]
-    }
-  ]
+  # ⚠️ הסרנו manage_aws_auth_configmap ו- aws_auth_roles
 
   addons = {
     coredns = {
@@ -231,4 +222,5 @@ module "eks" {
     Project     = var.project_name
   }
 }
+
 
