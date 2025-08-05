@@ -88,9 +88,15 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
       - name: ✅ Update kubeconfig and overwrite aws-auth mapUsers
         run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name asterra-cl
+          aws eks update-kubeconfig --region $AWS_REGION --name asterra-c
 
           cat <<EOF > aws-auth.yaml
           apiVersion: v1
