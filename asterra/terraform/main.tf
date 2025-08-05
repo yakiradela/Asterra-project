@@ -175,7 +175,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "asterra-cluster"
+  cluster_name    = "asterra-clu"
   cluster_version = "1.29"
 
   cluster_endpoint_public_access  = true
