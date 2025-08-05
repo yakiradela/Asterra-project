@@ -88,8 +88,27 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Deploy to Kubernetes
+      - name: ✅ Update kubeconfig and overwrite aws-auth mapUsers
         run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name asterra-clus
+          aws eks update-kubeconfig --region $AWS_REGION --name asterra-clust
+
+          cat <<EOF > aws-auth.yaml
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: aws-auth
+            namespace: kube-system
+          data:
+            mapUsers: |
+              - userarn: arn:aws:iam::557690607676:user/asterra
+                username: asterra
+                groups:
+                  - system:masters
+          EOF
+
+          kubectl apply -f aws-auth.yaml
+
+      - name: 🚀 Deploy to Kubernetes
+        run: |
           kubectl set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           kubectl rollout status deployment/geojson-processor
