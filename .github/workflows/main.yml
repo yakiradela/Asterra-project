@@ -88,18 +88,17 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-      # No need to install kubectl manually
-
+      # ✅ Replace broken action with the correct one:
       - name: 🚀 Deploy to Kubernetes
-        uses: aws-actions/eks-kubectl-action@v1
+        uses: aws-actions/eks-actions@v1
         with:
           cluster-name: asterra-B
           region: ${{ env.AWS_REGION }}
-          args: set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+          kubectl-command: set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: ⏱️ Wait for rollout to complete
-        uses: aws-actions/eks-kubectl-action@v1
+        uses: aws-actions/eks-actions@v1
         with:
           cluster-name: asterra-B
           region: ${{ env.AWS_REGION }}
-          args: rollout status deployment/geojson-processor
+          kubectl-command: rollout status deployment/geojson-processor
