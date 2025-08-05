@@ -90,6 +90,6 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name asterra-cluster
+          aws eks update-kubeconfig --region $AWS_REGION --name asterra-clus
           kubectl set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           kubectl rollout status deployment/geojson-processor
