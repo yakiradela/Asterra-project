@@ -88,17 +88,18 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
-
-      - name: ✅ Update kubeconfig and overwrite aws-auth mapUsers
-        run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name asterra-A
+      # No need to install kubectl manually
 
       - name: 🚀 Deploy to Kubernetes
-        run: |
-          kubectl set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
-          kubectl rollout status deployment/geojson-processor
+        uses: aws-actions/eks-kubectl-action@v1
+        with:
+          cluster-name: asterra-B
+          region: ${{ env.AWS_REGION }}
+          args: set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: ⏱️ Wait for rollout to complete
+        uses: aws-actions/eks-kubectl-action@v1
+        with:
+          cluster-name: asterra-B
+          region: ${{ env.AWS_REGION }}
+          args: rollout status deployment/geojson-processor
