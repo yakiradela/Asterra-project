@@ -96,23 +96,7 @@ jobs:
 
       - name: ✅ Update kubeconfig and overwrite aws-auth mapUsers
         run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name asterra-c
-
-          cat <<EOF > aws-auth.yaml
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: aws-auth
-            namespace: kube-system
-          data:
-            mapUsers: |
-              - userarn: arn:aws:iam::557690607676:user/asterra
-                username: asterra
-                groups:
-                  - system:masters
-          EOF
-
-          kubectl apply -f aws-auth.yaml
+          aws eks update-kubeconfig --region $AWS_REGION --name asterra-A
 
       - name: 🚀 Deploy to Kubernetes
         run: |
