@@ -175,7 +175,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "asterra-B"
+  cluster_name    = "asterra-C"
   cluster_version = "1.29"
 
   cluster_endpoint_public_access  = true
@@ -192,7 +192,7 @@ module "eks" {
   cluster_security_group_additional_rules = {}
   node_security_group_additional_rules    = {}
   
-  kms_key_aliases = ["alias/asterra-B"]
+  kms_key_aliases = ["alias/asterra-C"]
 
   create_cloudwatch_log_group = true
 
