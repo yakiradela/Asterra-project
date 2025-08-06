@@ -88,6 +88,12 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
+      - name: Update kubeconfig manually
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name asterra-B
+          sed -i 's/client.authentication.k8s.io\/v1alpha1/client.authentication.k8s.io\/v1beta1/g' ~/.kube/config
+
+
       # ✅ Deploy to EKS using kubectl via ianbelcher/eks-kubectl-action
       - name: 🚀 Deploy to Kubernetes
         uses: ianbelcher/eks-kubectl-action@1.6
