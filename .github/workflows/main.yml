@@ -90,7 +90,7 @@ jobs:
 
       - name: Update kubeconfig manually
         run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name asterra-B
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name asterra-F
           sed -i 's/client.authentication.k8s.io\/v1alpha1/client.authentication.k8s.io\/v1beta1/g' ~/.kube/config
 
 
@@ -99,12 +99,12 @@ jobs:
         uses: ianbelcher/eks-kubectl-action@1.6
         with:
           aws_region: ${{ env.AWS_REGION }}
-          cluster_name: asterra-E
+          cluster_name: asterra-F
           args: set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: ⏱️ Wait for rollout to complete
         uses: ianbelcher/eks-kubectl-action@1.6
         with:
           aws_region: ${{ env.AWS_REGION }}
-          cluster_name: asterra-E
+          cluster_name: asterra-F
           args: rollout status deployment/geojson-processor
