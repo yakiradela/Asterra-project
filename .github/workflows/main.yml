@@ -99,7 +99,7 @@ jobs:
         uses: ianbelcher/eks-kubectl-action@1.6
         with:
           aws_region: ${{ env.AWS_REGION }}
-          cluster_name: asterra-B
+          cluster_name: asterra-C
           args: set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: ⏱️ Wait for rollout to complete
