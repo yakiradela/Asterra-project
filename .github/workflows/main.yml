@@ -106,5 +106,5 @@ jobs:
         uses: ianbelcher/eks-kubectl-action@1.6
         with:
           aws_region: ${{ env.AWS_REGION }}
-          cluster_name: asterra-B
+          cluster_name: asterra-C
           args: rollout status deployment/geojson-processor
