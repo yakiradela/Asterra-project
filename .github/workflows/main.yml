@@ -1,4 +1,4 @@
-name: CI/CD Pipeline (Terraform & Build & Test & Deploy)
+name: CI/CD Pipeline (Terraform & eksctl & Deploy)
 
 on:
   push:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build-and-deploy:
-    name: 🚀 Terraform → Test → Deploy
+    name: 🚀 Terraform → Build → Test → Deploy (eksctl)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,23 +34,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Setup Terraform CLI
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Clean Terraform cache
         working-directory: asterra/terraform/
-        run: |
-          rm -rf .terraform .terraform.lock.hcl
+        run: rm -rf .terraform .terraform.lock.hcl
 
       - name: Terraform Init
         working-directory: asterra/terraform/
         run: terraform init
 
-      - name: Terraform Apply (auto-approve)
+      - name: Terraform Apply
         working-directory: asterra/terraform/
         run: terraform apply -auto-approve -input=false -no-color
 
-      - name: Install system dependencies (GDAL)
+      - name: Install GDAL system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gdal-bin libgdal-dev
@@ -66,10 +65,10 @@ jobs:
           pip install -r asterra/geojson_loader/requirements.txt
           pip install pytest
 
-      - name: Run Tests
+      - name: Run Unit Tests
         run: PYTHONPATH=asterra/geojson_loader pytest asterra/tests
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -88,23 +87,24 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Update kubeconfig manually
+      - name: Install eksctl
         run: |
-          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name asterra-F
-          sed -i 's/client.authentication.k8s.io\/v1alpha1/client.authentication.k8s.io\/v1beta1/g' ~/.kube/config
+          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+          sudo mv /tmp/eksctl /usr/local/bin
+          eksctl version
 
+      - name: Update kubeconfig for EKS cluster
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name asterra-AB
 
-      # ✅ Deploy to EKS using kubectl via ianbelcher/eks-kubectl-action
-      - name: 🚀 Deploy to Kubernetes
-        uses: ianbelcher/eks-kubectl-action@1.6
-        with:
-          aws_region: ${{ env.AWS_REGION }}
-          cluster_name: asterra-F
-          args: set image deployment/geojson-processor geojson-processor=${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Replace image in Kubernetes manifest
+        run: |
+          sed -i "s|IMAGE_PLACEHOLDER|${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG|g" k8s/deployment.yaml
 
-      - name: ⏱️ Wait for rollout to complete
-        uses: ianbelcher/eks-kubectl-action@1.6
-        with:
-          aws_region: ${{ env.AWS_REGION }}
-          cluster_name: asterra-F
-          args: rollout status deployment/geojson-processor
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+
+      - name: Wait for rollout to complete
+        run: |
+          kubectl rollout status deployment/geojson-processor
